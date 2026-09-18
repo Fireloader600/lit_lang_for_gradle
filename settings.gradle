@@ -1,0 +1,11 @@
+plugins {
+    id 'org.gradle.toolchains.foojay-resolver-convention' version '1.0.0'
+}
+
+rootProject.name = 'Lithium'
+
+// === LITHIUM LIBRARIES BEGIN ===
+// 此列表由 `gradlew llp -PllpArgs="install <path>"` 自动维护，请勿手动修改
+ext.lithiumLibraries = [
+]
+// === LITHIUM LIBRARIES END ===

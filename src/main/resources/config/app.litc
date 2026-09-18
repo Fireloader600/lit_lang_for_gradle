@@ -1,0 +1,15 @@
+config(){
+    app_name("Lithium Demo");
+    version("0.1.0");
+    debug(true);
+    max_retries(3);
+    # 多个参数会自动成为列表
+    tags("language", "script", "jvm");
+    servers("us-east", "eu-west", "ap-south");
+    database(){
+        "host",
+        "localhost",
+        "port",
+        5432
+    }
+}

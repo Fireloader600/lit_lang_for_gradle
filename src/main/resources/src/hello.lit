@@ -1,0 +1,6 @@
+import lit;
+
+lit(){
+    out("Hello World!");
+    end 0;
+}

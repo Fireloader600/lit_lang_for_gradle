@@ -1,0 +1,9 @@
+config(){
+    key("value");
+    #我是注释
+    list("list-name"){
+        "Hello",
+        "World!"
+    }
+    
+}

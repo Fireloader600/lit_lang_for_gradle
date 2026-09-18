@@ -1,0 +1,267 @@
+plugins {
+    id 'java'
+    id 'application'
+}
+
+group   = project.property('group')
+version = project.property('version')
+
+repositories {
+    mavenCentral()
+}
+
+// ============================================================
+// 编译设置
+// ============================================================
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.release = 17
+    options.encoding = 'UTF-8'
+}
+
+// ============================================================
+// 应用入口
+// ============================================================
+application {
+    mainClass = 'com.lithium.Main'
+    applicationName = 'lit'
+    applicationDefaultJvmArgs = [
+            '-Dstdout.encoding=UTF-8',
+            '-Dstderr.encoding=UTF-8'
+    ]
+}
+
+// ============================================================
+// run 任务：默认跑 hello.lit，可通过 -PlitArgs 覆盖
+//   .\gradlew run
+//   .\gradlew run -PlitArgs="run src/main.lit"
+//   .\gradlew run -PlitArgs="config config/app.litc"
+//   .\gradlew run -PlitArgs="registry"
+// ============================================================
+tasks.named('run', JavaExec) {
+    if (!project.hasProperty('litArgs')) {
+        args = ['run', 'src/hello.lit']
+    } else {
+        args = project.property('litArgs').toString().split('\\s+') as List
+    }
+    jvmArgs '-Dstdout.encoding=UTF-8', '-Dstderr.encoding=UTF-8'
+}
+
+// ============================================================
+// llp - Lithium Library Package 管理器
+// 用法:
+//   .\gradlew llp -PllpArgs="install library/com/example.llp"
+//   .\gradlew llp -PllpArgs="list"
+// ============================================================
+tasks.register('llp') {
+    group = 'lithium'
+    description = 'Lithium Library Package 管理器'
+
+    doLast {
+        def raw = project.hasProperty('llpArgs') ? project.property('llpArgs').toString() : ''
+        def parts = raw.trim().split('\\s+')
+
+        if (parts.length == 0 || parts[0].isEmpty()) {
+            println 'llp version:1.0.0'
+            println '用法:'
+            println '  .\\gradlew llp -PllpArgs="install <path-to-llp>"'
+            println '  .\\gradlew llp -PllpArgs="list"'
+            return
+        }
+
+        switch (parts[0]) {
+            case 'install':
+                if (parts.length < 2) {
+                    throw new GradleException('缺少参数: install <path-to-llp>')
+                }
+                llpInstall(parts[1])
+                break
+            case 'list':
+                llpList()
+                break
+            default:
+                throw new GradleException("未知子命令: ${parts[0]}")
+        }
+    }
+}
+
+// --- llp install ---
+def llpInstall(String llpPath) {
+    println 'llp version:1.0.0'
+
+    // 在项目根目录和 src/main/resources/ 下都找一下
+    def candidates = [
+            file(llpPath),
+            file("src/main/resources/${llpPath}")
+    ]
+    def llpFile = candidates.find { it.exists() }
+    if (llpFile == null) {
+        throw new GradleException("找不到 .llp 文件: ${llpPath}")
+    }
+
+    // 解压到 src/main/resources/library/
+    def targetRoot = file('src/main/resources/library')
+    targetRoot.mkdirs()
+
+    def zip = new java.util.zip.ZipFile(llpFile)
+    try {
+        zip.entries().each { entry ->
+            def outFile = new File(targetRoot, entry.name)
+            if (entry.isDirectory()) {
+                outFile.mkdirs()
+            } else {
+                outFile.parentFile.mkdirs()
+                zip.getInputStream(entry).withStream { input ->
+                    outFile.withOutputStream { output ->
+                        output << input
+                    }
+                }
+            }
+        }
+    } finally {
+        zip.close()
+    }
+
+    // 读取 llp 内 lit.json 里的 name；没有就用文件名
+    def libName = llpFile.name.replaceAll(/\.llp$/, '')
+    def innerMeta = new File(targetRoot, 'lit.json')
+    if (innerMeta.exists()) {
+        def txt = innerMeta.text
+        def m = (txt =~ /"name"\s*:\s*"([^"]+)"/)
+        if (m.find()) {
+            libName = m.group(1)
+        }
+    }
+
+    // 更新 settings.gradle 的库列表
+    updateSettingsGradle(libName)
+
+    println "已安装库: ${libName}"
+    println "库文件位于: ${targetRoot}/${libName}/"
+}
+
+// --- llp list ---
+def llpList() {
+    println 'llp version:1.0.0'
+    def settingsFile = file('settings.gradle')
+    if (!settingsFile.exists()) {
+        println '(settings.gradle 不存在)'
+        return
+    }
+    def content = settingsFile.text
+    def m = (content =~ /ext\.lithiumLibraries\s*=\s*\[([\s\S]*?)\]/)
+    if (!m.find()) {
+        println '(未发现库列表)'
+        return
+    }
+    def body = m.group(1)
+    def libs = (body =~ /"([^"]+)"/).collect { it[1] }
+    if (libs.isEmpty()) {
+        println '已安装库: (无)'
+    } else {
+        println "已安装库 (${libs.size()}):"
+        libs.each { println "  - ${it}" }
+    }
+}
+
+// --- 把库名写进 settings.gradle 的标记块 ---
+def updateSettingsGradle(String libName) {
+    def settingsFile = file('settings.gradle')
+    if (!settingsFile.exists()) {
+        throw new GradleException('settings.gradle 不存在')
+    }
+    def content = settingsFile.text
+    def beginMarker = '// === LITHIUM LIBRARIES BEGIN ==='
+    def endMarker   = '// === LITHIUM LIBRARIES END ==='
+
+    def beginIdx = content.indexOf(beginMarker)
+    def endIdx   = content.indexOf(endMarker)
+    if (beginIdx < 0 || endIdx < 0) {
+        throw new GradleException('settings.gradle 中找不到 LITHIUM LIBRARIES 标记块')
+    }
+
+    // 解析现有库
+    def block = content.substring(beginIdx, endIdx)
+    def existing = (block =~ /"([^"]+)"/).collect { it[1] } as LinkedHashSet
+    existing.add(libName)
+
+    // 重写块
+    def sb = new StringBuilder()
+    sb.append(beginMarker).append('\n')
+    sb.append('// 此列表由 `gradlew llp -PllpArgs="install <path>"` 自动维护，请勿手动修改\n')
+    sb.append('ext.lithiumLibraries = [\n')
+    existing.each { sb.append('    "').append(it).append('",\n') }
+    sb.append(']\n')
+    sb.append(endMarker)
+
+    def newContent = content.substring(0, beginIdx) +
+            sb.toString() +
+            content.substring(endIdx + endMarker.length())
+
+    settingsFile.text = newContent
+}
+
+// ============================================================
+// cl - 生成可在 `java -jar` 环境运行的 jar 包
+// 产物: build/java-jar/libs/Lithium-<version>.jar
+// 用法: .\gradlew cl
+//       java -jar build/java-jar/libs/Lithium-0.1.0.jar run src/hello.lit
+// ============================================================
+tasks.register('cl', Jar) {
+    group = 'lithium'
+    description = '生成 java -jar 可运行的 jar 包'
+
+    archiveFileName = "Lithium-${project.version}.jar"
+    destinationDirectory = layout.buildDirectory.dir('java-jar/libs')
+
+    manifest {
+        attributes(
+                'Main-Class': 'com.lithium.Main',
+                'Implementation-Title': 'Lithium',
+                'Implementation-Version': project.version,
+                'Lit-Version': project.version
+        )
+    }
+
+    from sourceSets.main.output
+    dependsOn configurations.runtimeClasspath
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+// ============================================================
+// fatJar - 原先的可选 fat jar（保留）
+// 产物: build/libs/Lithium-<version>-all.jar
+// ============================================================
+tasks.register('fatJar', Jar) {
+    archiveClassifier = 'all'
+    manifest {
+        attributes(
+                'Main-Class': 'com.lithium.Main',
+                'Implementation-Title': 'Lithium',
+                'Implementation-Version': project.version,
+                'Lit-Version': project.version
+        )
+    }
+    from sourceSets.main.output
+    dependsOn configurations.runtimeClasspath
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+// ============================================================
+// packLit - 单独把 lit 项目资源打成 zip（发布用，可选）
+// ============================================================
+tasks.register('packLit', Zip) {
+    from('src/main/resources') { into('lit') }
+    archiveFileName = "lithium-${project.version}-lit.zip"
+    destinationDirectory = layout.buildDirectory.dir('distributions')
+}
