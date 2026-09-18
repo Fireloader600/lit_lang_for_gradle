@@ -1,0 +1,118 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Lithium",
+  "scopeName": "source.lithium",
+  "fileTypes": ["lit"],
+  "patterns": [
+    { "include": "#comments" },
+    { "include": "#strings" },
+    { "include": "#numbers" },
+    { "include": "#keywords" },
+    { "include": "#builtins" },
+    { "include": "#block-call" },
+    { "include": "#function-call" },
+    { "include": "#operators" },
+    { "include": "#brackets" }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.line.number-sign.lithium",
+          "match": "#.*$"
+        },
+        {
+          "name": "comment.line.double-slash.lithium",
+          "match": "//.*$"
+        }
+      ]
+    },
+    "strings": {
+      "patterns": [
+        {
+          "name": "string.quoted.double.lithium",
+          "begin": "\"",
+          "end": "\"",
+          "patterns": [
+            {
+              "name": "constant.character.escape.lithium",
+              "match": "\\\\(n|t|r|\"|\\\\|.)"
+            }
+          ]
+        }
+      ]
+    },
+    "numbers": {
+      "patterns": [
+        {
+          "name": "constant.numeric.float.lithium",
+          "match": "\\b\\d+\\.\\d+\\b"
+        },
+        {
+          "name": "constant.numeric.integer.lithium",
+          "match": "\\b\\d+\\b"
+        }
+      ]
+    },
+    "keywords": {
+      "patterns": [
+        {
+          "name": "keyword.control.lithium",
+          "match": "\\b(import|let|if|else|while|end|fn|return)\\b"
+        },
+        {
+          "name": "constant.language.lithium",
+          "match": "\\b(true|false|null)\\b"
+        }
+      ]
+    },
+    "builtins": {
+      "patterns": [
+        {
+          "name": "support.function.lithium",
+          "match": "\\b(out|print|len|str|num|type|bool|upper|lower|split|contains|push|range|exit|assert)\\b(?=\\s*\\()"
+        }
+      ]
+    },
+    "block-call": {
+      "patterns": [
+        {
+          "name": "entity.name.type.lithium",
+          "match": "\\b([A-Za-z_][A-Za-z0-9_]*)\\s*(?=\\(.*\\)\\s*\\{)"
+        }
+      ]
+    },
+    "function-call": {
+      "patterns": [
+        {
+          "name": "entity.name.function.lithium",
+          "match": "\\b([A-Za-z_][A-Za-z0-9_]*)\\s*(?=\\()"
+        },
+        {
+          "name": "variable.other.lithium",
+          "match": "\\b([a-z_][A-Za-z0-9_]*)\\b"
+        }
+      ]
+    },
+    "operators": {
+      "patterns": [
+        {
+          "name": "keyword.operator.lithium",
+          "match": "==|!=|<=|>=|&&|\\|\\||[-+*/%<>=!]"
+        }
+      ]
+    },
+    "brackets": {
+      "patterns": [
+        {
+          "name": "punctuation.section.brackets.lithium",
+          "match": "[\\{\\}\\[\\]\\(\\)]"
+        },
+        {
+          "name": "punctuation.terminator.lithium",
+          "match": "[;,.]"
+        }
+      ]
+    }
+  }
+}

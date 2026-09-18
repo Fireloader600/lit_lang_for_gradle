@@ -1,0 +1,76 @@
+{
+  "Lithium 入口": {
+    "prefix": "lit",
+    "body": [
+      "import lit;",
+      "",
+      "lit(){",
+      "    ${1:out(\"Hello World!\");}",
+      "    end 0;",
+      "}"
+    ],
+    "description": "Lithium 主入口块"
+  },
+  "输出一行": {
+    "prefix": "out",
+    "body": ["out(${1:\"text\"});"],
+    "description": "out(...)"
+  },
+  "变量声明": {
+    "prefix": "let",
+    "body": ["let ${1:name} = ${2:value};"],
+    "description": "let name = value;"
+  },
+  "条件": {
+    "prefix": "if",
+    "body": [
+      "if ${1:condition} {",
+      "    $0",
+      "}"
+    ],
+    "description": "if block"
+  },
+  "if-else": {
+    "prefix": "ife",
+    "body": [
+      "if ${1:condition} {",
+      "    ${2}",
+      "} else {",
+      "    $0",
+      "}"
+    ],
+    "description": "if-else block"
+  },
+  "while": {
+    "prefix": "while",
+    "body": [
+      "while ${1:condition} {",
+      "    $0",
+      "}"
+    ],
+    "description": "while block"
+  },
+  "函数": {
+    "prefix": "fn",
+    "body": [
+      "fn ${1:name}(${2:args}) {",
+      "    ${3:return null;}",
+      "}"
+    ],
+    "description": "定义函数"
+  },
+  "结束": {
+    "prefix": "end",
+    "body": ["end ${1:0};"],
+    "description": "程序结束"
+  },
+  "Config 块": {
+    "prefix": "config",
+    "body": [
+      "config(){",
+      "    ${1:key}(\"${2:value}\");",
+      "}"
+    ],
+    "description": "config 配置文件块"
+  }
+}

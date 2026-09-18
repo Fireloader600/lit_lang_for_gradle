@@ -1,0 +1,107 @@
+{
+  "name": "lithium-lang",
+  "displayName": "Lithium (lit)",
+  "description": "Lithium 语言支持：语法高亮、括号匹配、注释、片段、命令",
+  "version": "0.1.0",
+  "publisher": "lithium",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": ["Programming Languages", "Snippets", "Linters"],
+  "keywords": ["lithium", "lit", "scripting"],
+
+  "main": "./src/extension.js",
+  "activationEvents": [
+    "onLanguage:lithium",
+    "onCommand:lithium.runFile",
+    "onCommand:lithium.parseConfig",
+    "onCommand:lithium.showRegistry"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "lithium",
+        "aliases": ["Lithium", "lit"],
+        "extensions": [".lit"],
+        "configuration": "./language-configuration.json"
+      },
+      {
+        "id": "lithium-config",
+        "aliases": ["Lithium Config", "litc"],
+        "extensions": [".litc"],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "lithium",
+        "scopeName": "source.lithium",
+        "path": "./syntaxes/lithium.tmLanguage.json"
+      },
+      {
+        "language": "lithium-config",
+        "scopeName": "source.lithium.config",
+        "path": "./syntaxes/lithium-config.tmLanguage.json"
+      }
+    ],
+    "snippets": [
+      {
+        "language": "lithium",
+        "path": "./snippets/lithium.json"
+      }
+    ],
+    "commands": [
+      {
+        "command": "lithium.runFile",
+        "title": "Lithium: 运行当前文件",
+        "category": "Lithium"
+      },
+      {
+        "command": "lithium.parseConfig",
+        "title": "Lithium: 解析当前配置文件",
+        "category": "Lithium"
+      },
+      {
+        "command": "lithium.showRegistry",
+        "title": "Lithium: 显示已注册的原生函数",
+        "category": "Lithium"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "when": "resourceLangId == lithium",
+          "command": "lithium.runFile",
+          "group": "lithium@1"
+        },
+        {
+          "when": "resourceLangId == lithium-config",
+          "command": "lithium.parseConfig",
+          "group": "lithium@1"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Lithium",
+      "properties": {
+        "lithium.javaCommand": {
+          "type": "string",
+          "default": "java",
+          "description": "Java 可执行文件路径"
+        },
+        "lithium.jarPath": {
+          "type": "string",
+          "default": "",
+          "description": "Lithium fat JAR 路径，例如 build/libs/Lithium-0.1.0-all.jar。留空则尝试自动查找。"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@vscode/vsce": "^2.22.0"
+  }
+}
